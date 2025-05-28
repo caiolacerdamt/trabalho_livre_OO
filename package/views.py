@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 import datetime
 from package.controllers import GerenciadorFinanceiro
 from package.models import Receita, Despesa, Categoria, Transacao 
-from package.persistence import PersistenciaDados
+from package.persistence import PersistenciaDados 
 
 class AppFinanceiro:
     def __init__(self, master):
@@ -18,7 +18,7 @@ class AppFinanceiro:
 
         self._configurar_ui()
         self._atualizar_saldo()
-        self._atualizar_extrato()
+        self._atualizar_extrato() 
         self._preencher_combobox_categorias()
 
 
@@ -51,7 +51,6 @@ class AppFinanceiro:
 
         self.frame_transacao = ttk.LabelFrame(self.master, text="Nova Transação")
         self.frame_transacao.pack(pady=10, padx=10, fill="x")
-
         self.frame_transacao.columnconfigure(0, weight=1)
         self.frame_transacao.columnconfigure(1, weight=3)
 
@@ -84,13 +83,29 @@ class AppFinanceiro:
         self.frame_extrato = ttk.LabelFrame(self.master, text="Extrato de Transações")
         self.frame_extrato.pack(pady=10, padx=10, fill="both", expand=True)
 
+        self.frame_filtros_extrato = ttk.Frame(self.frame_extrato)
+        self.frame_filtros_extrato.pack(pady=5, fill="x")
+
+        ttk.Label(self.frame_filtros_extrato, text="De:").pack(side=tk.LEFT, padx=(5,0))
+        self.entrada_data_inicio = ttk.Entry(self.frame_filtros_extrato, width=12)
+        self.entrada_data_inicio.pack(side=tk.LEFT, padx=5)
+        self.entrada_data_inicio.insert(0, (datetime.date.today().replace(day=1)).strftime("%d/%m/%Y")) # Início do mês atual
+
+        ttk.Label(self.frame_filtros_extrato, text="Até:").pack(side=tk.LEFT)
+        self.entrada_data_fim = ttk.Entry(self.frame_filtros_extrato, width=12)
+        self.entrada_data_fim.pack(side=tk.LEFT, padx=5)
+        self.entrada_data_fim.insert(0, datetime.date.today().strftime("%d/%m/%Y")) # Dia atual
+
+        ttk.Button(self.frame_filtros_extrato, text="Filtrar Extrato", command=self._atualizar_extrato).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.frame_filtros_extrato, text="Limpar Filtro", command=self._limpar_filtro_extrato).pack(side=tk.LEFT, padx=5)
+
         self.tree_extrato = ttk.Treeview(self.frame_extrato, columns=("Tipo", "Valor", "Descrição", "Data", "Categoria", "ID"), show="headings")
         self.tree_extrato.heading("Tipo", text="Tipo")
         self.tree_extrato.heading("Valor", text="Valor")
         self.tree_extrato.heading("Descrição", text="Descrição")
         self.tree_extrato.heading("Data", text="Data")
         self.tree_extrato.heading("Categoria", text="Categoria")
-        self.tree_extrato.heading("ID", text="ID", anchor="center") 
+        self.tree_extrato.heading("ID", text="ID", anchor="center")
 
         self.tree_extrato.column("Tipo", width=80, anchor="center")
         self.tree_extrato.column("Valor", width=100, anchor="e")
@@ -159,7 +174,7 @@ class AppFinanceiro:
             messagebox.showinfo("Sucesso", f"{tipo} adicionada com sucesso!")
             self._limpar_campos_transacao()
             self._atualizar_saldo()
-            self._atualizar_extrato()
+            self._atualizar_extrato() 
 
         except ValueError as e:
             messagebox.showerror("Erro", f"Erro ao adicionar transação: {e}")
@@ -184,7 +199,32 @@ class AppFinanceiro:
         for item in self.tree_extrato.get_children():
             self.tree_extrato.delete(item)
 
-        extrato = self.gerenciador.get_extrato()
+        data_inicio_str = self.entrada_data_inicio.get().strip()
+        data_fim_str = self.entrada_data_fim.get().strip()
+
+        data_inicio = None
+        data_fim = None
+
+        if data_inicio_str:
+            try:
+                data_inicio = datetime.datetime.strptime(data_inicio_str, "%d/%m/%Y").date()
+            except ValueError:
+                messagebox.showerror("Erro de Data", "Formato de 'Data De' inválido. Use DD/MM/AAAA.")
+                return
+
+        if data_fim_str:
+            try:
+                data_fim = datetime.datetime.strptime(data_fim_str, "%d/%m/%Y").date()
+            except ValueError:
+                messagebox.showerror("Erro de Data", "Formato de 'Data Até' inválido. Use DD/MM/AAAA.")
+                return
+
+        if data_inicio and data_fim and data_inicio > data_fim:
+            messagebox.showwarning("Datas Inválidas", "'Data De' não pode ser maior que 'Data Até'.")
+            return
+
+        extrato = self.gerenciador.get_extrato(data_inicio, data_fim)
+
         for transacao in extrato:
             self.tree_extrato.insert("", tk.END, values=(
                 transacao.get_tipo(),
@@ -194,6 +234,11 @@ class AppFinanceiro:
                 transacao.categoria.nome,
                 transacao.id
             ))
+
+    def _limpar_filtro_extrato(self):
+        self.entrada_data_inicio.delete(0, tk.END)
+        self.entrada_data_fim.delete(0, tk.END)
+        self._atualizar_extrato() 
 
     def _on_double_click_extrato(self, event):
         item_id = self.tree_extrato.selection()

@@ -1,5 +1,39 @@
 {
-    "transacoes": [],
+    "transacoes": [
+        {
+            "id": 1,
+            "valor": 5000.0,
+            "descricao": "Salário",
+            "data": "2025-05-03",
+            "categoria": {
+                "id": 1,
+                "nome": "Salário"
+            },
+            "tipo": "Receita"
+        },
+        {
+            "id": 2,
+            "valor": 5000.0,
+            "descricao": "Salário",
+            "data": "2025-06-03",
+            "categoria": {
+                "id": 1,
+                "nome": "Salário"
+            },
+            "tipo": "Receita"
+        },
+        {
+            "id": 3,
+            "valor": 2450.0,
+            "descricao": "Tigrinho",
+            "data": "2025-05-23",
+            "categoria": {
+                "id": 5,
+                "nome": "Lazer"
+            },
+            "tipo": "Despesa"
+        }
+    ],
     "categorias": [
         {
             "id": 1,
